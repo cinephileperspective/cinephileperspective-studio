@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { TEMPLATES, getTemplate, normalizeData, collectIds, audioPlan } from '../templates/index.js'
-import { shortsStatus, fileSlug } from './files.js'
+import { shortsStatus, sizeStatus, fileSlug } from './files.js'
 import { mix, seg, easeBack, richLines } from './draw.js'
+import { listPlan, listAt, rankOf, listCount, LW, LH, WIDE_BACKGROUNDS } from './wide.js'
+import { LOOKS } from './looks.js'
+import { OCCASIONS, CUSTOM, BACKDROPS } from '../templates/festival.js'
 
 // A canvas context that accepts every call, so draw() can run in Node and any typo or bad
 // reference still throws.
@@ -198,5 +201,203 @@ describe('tribute and update templates', () => {
     const td = tr.defaults()
     expect(td.blackAndWhite).toBe(true)
     expect(() => tr.draw(fakeCtx(), 6, { ...td, photo: 'x', message: 'Forever in our hearts. Gone but never forgotten by those who loved his work.', candle: false }, A)).not.toThrow()
+  })
+})
+
+describe('long video (16:9 list show)', () => {
+  const cd = getTemplate('countdown')
+
+  it('is horizontal and registered as a long template', () => {
+    expect(cd.kind).toBe('long')
+    expect(cd.size).toEqual([LW, LH])
+    expect(LW).toBeGreaterThan(LH)
+    expect(TEMPLATES.filter((t) => t.kind === 'long').map((t) => t.key)).toContain('countdown')
+  })
+
+  it('lays the scenes out in order and grows with the item list', () => {
+    const d = cd.defaults()
+    const p = listPlan(d)
+    expect(p.n).toBe(3)
+    expect(p.total).toBeCloseTo(p.title + p.hook + 3 * p.item + p.cta)
+    expect(cd.duration(d)).toBeCloseTo(p.total)
+    d.items = [...d.items, { image: '', heading: 'Four', year: '', rating: '', body: '' }]
+    expect(cd.duration(d)).toBeCloseTo(p.total + p.item)
+  })
+
+  it('reports the right scene for any moment', () => {
+    const d = cd.defaults()
+    const p = listPlan(d)
+    expect(listAt(d, 0).scene).toBe('title')
+    expect(listAt(d, p.title + 0.1).scene).toBe('hook')
+    const firstItem = p.title + p.hook
+    expect(listAt(d, firstItem + 0.1)).toMatchObject({ scene: 'item', i: 0 })
+    expect(listAt(d, firstItem + p.item + 0.1)).toMatchObject({ scene: 'item', i: 1 })
+    expect(listAt(d, p.total - 0.1).scene).toBe('cta')
+    // The last item never spills past its own slot.
+    expect(listAt(d, firstItem + p.n * p.item - 0.001).i).toBe(p.n - 1)
+  })
+
+  it('skips the hook card when there is no hook text', () => {
+    const d = { ...cd.defaults(), hook: '   ' }
+    expect(listPlan(d).hook).toBe(0)
+    expect(listAt(d, listPlan(d).title + 0.1).scene).toBe('item')
+  })
+
+  it('counts down when asked and up otherwise', () => {
+    const n = 10
+    expect(rankOf({ countdown: true }, 0, n)).toBe(10)
+    expect(rankOf({ countdown: true }, 9, n)).toBe(1)
+    expect(rankOf({ countdown: false }, 0, n)).toBe(1)
+    expect(rankOf({ countdown: false }, 9, n)).toBe(10)
+  })
+
+  it('survives an empty item list', () => {
+    const d = { ...cd.defaults(), items: [] }
+    expect(listCount(d)).toBe(1)
+    expect(cd.duration(d)).toBeGreaterThan(2)
+    expect(() => cd.draw(fakeCtx(), cd.duration(d) / 2, d, A)).not.toThrow()
+  })
+
+  it('tells long videos apart from Shorts when advising on length', () => {
+    expect(sizeStatus(cd, 600).level).toBe('ok')
+    expect(sizeStatus(cd, 600).text).toContain('10:00')
+    expect(sizeStatus(getTemplate('buzz'), 600).level).toBe('bad')
+    expect(sizeStatus(cd, 30).level).toBe('warn')
+  })
+})
+
+describe('festival wishes', () => {
+  const fest = getTemplate('festival')
+
+  it('offers a custom palette alongside the named occasions', () => {
+    const options = fest.fields.find((f) => f.key === 'occasion').options
+    expect(options).toEqual([...Object.keys(OCCASIONS), CUSTOM])
+    expect(options.length).toBeGreaterThan(10)
+    for (const P of Object.values(OCCASIONS)) {
+      for (const k of ['bg', 'panel', 'accent', 'ink', 'mute', 'on', 'star']) expect(P[k]).toMatch(/^#[0-9a-fA-F]{6}$/)
+    }
+  })
+
+  it('draws every occasion and background without throwing', () => {
+    const d = fest.defaults()
+    for (const occasion of [...Object.keys(OCCASIONS), CUSTOM]) {
+      expect(() => fest.draw(fakeCtx(), 3, { ...d, occasion }, A)).not.toThrow()
+    }
+    for (const bgStyle of BACKDROPS) {
+      expect(() => fest.draw(fakeCtx(), 3, { ...d, bgStyle }, A)).not.toThrow()
+    }
+    // A bad palette name and a bad custom colour both fall back instead of breaking.
+    expect(() => fest.draw(fakeCtx(), 3, { ...d, occasion: 'Nope' }, A)).not.toThrow()
+    expect(() => fest.draw(fakeCtx(), 3, { ...d, occasion: CUSTOM, customBg: 'red', customAccent: '' }, A)).not.toThrow()
+  })
+
+  it('tracks the emblem image as an asset', () => {
+    const d = fest.defaults()
+    d.emblem = 'e1'
+    d.audio = 'm1'
+    expect(collectIds(fest, d).sort()).toEqual(['e1', 'm1'])
+  })
+})
+
+
+describe('every Shorts template except Festival Wishes has a long counterpart', () => {
+  // The pairing the studio promises: one long template per short, Festival Wishes excepted.
+  // Cinema Countdown is the extra generic list and deliberately has no short sibling.
+  const PAIRS = [
+    ['buzz', 'buzzlong'],
+    ['birthday', 'birthdaylong'],
+    ['tribute', 'tributelong'],
+    ['rewind', 'rewindlong'],
+    ['review', 'reviewlong'],
+    ['spotlight', 'spotlightlong'],
+  ]
+
+  it('pairs them up, and leaves the greeting out', () => {
+    for (const [short, long] of PAIRS) {
+      expect(getTemplate(short).kind, short).toBe('short')
+      expect(getTemplate(long).kind, long).toBe('long')
+      expect(getTemplate(long).size, long).toEqual([LW, LH])
+    }
+    expect(TEMPLATES.some((t) => t.key === 'festivallong')).toBe(false)
+    // Nothing is missing: every short bar the greeting is covered.
+    const shorts = TEMPLATES.filter((t) => t.kind === 'short').map((t) => t.key)
+    expect(shorts.filter((k) => k !== 'festival').sort()).toEqual(PAIRS.map(([s]) => s).sort())
+    // And nothing is spare: the only long template without a short is Cinema Countdown.
+    const longs = TEMPLATES.filter((t) => t.kind === 'long').map((t) => t.key)
+    expect(longs.filter((k) => !PAIRS.some(([, l]) => l === k))).toEqual(['countdown'])
+  })
+
+  it('gives every long template a distinct key, label and tab name', () => {
+    const longs = TEMPLATES.filter((t) => t.kind === 'long')
+    expect(new Set(longs.map((t) => t.key)).size).toBe(longs.length)
+    expect(new Set(longs.map((t) => t.label)).size).toBe(longs.length)
+    expect(new Set(longs.map((t) => t.short)).size).toBe(longs.length)
+    for (const t of longs) expect(t.label, t.key).toMatch(/long|Countdown/)
+  })
+
+  it('draws every colour template and background without throwing', () => {
+    for (const t of TEMPLATES.filter((x) => x.kind === 'long')) {
+      const d = t.defaults()
+      const mid = t.duration(d) / 2
+      for (const look of Object.keys(LOOKS)) expect(() => t.draw(fakeCtx(), mid, { ...d, look }, A), `${t.key}/${look}`).not.toThrow()
+      for (const bgStyle of WIDE_BACKGROUNDS) expect(() => t.draw(fakeCtx(), mid, { ...d, bgStyle }, A), `${t.key}/${bgStyle}`).not.toThrow()
+      // A look or background that is not on the list falls back rather than breaking.
+      expect(() => t.draw(fakeCtx(), mid, { ...d, look: 'nope', bgStyle: 'nope', shape: 'nope' }, A)).not.toThrow()
+    }
+  })
+
+  it('grows with its list and survives an empty one', () => {
+    for (const t of TEMPLATES.filter((x) => x.kind === 'long')) {
+      const d = t.defaults()
+      const before = t.duration(d)
+      const grown = { ...d, items: [...d.items, { image: '', heading: 'Extra', body: '' }] }
+      expect(t.duration(grown), t.key).toBeCloseTo(before + listPlan(d).item)
+      const empty = { ...d, items: [] }
+      expect(listCount(empty)).toBe(1)
+      for (let i = 0; i <= 20; i++) {
+        expect(() => t.draw(fakeCtx(), (t.duration(empty) * i) / 20.5, empty, A), t.key).not.toThrow()
+      }
+    }
+  })
+
+  it('tracks every picture in the list as an asset', () => {
+    for (const t of TEMPLATES.filter((x) => x.kind === 'long')) {
+      const d = t.defaults()
+      d.items[0].image = 'p1'
+      d.items[1].image = 'p2'
+      d.audio = 'm1'
+      expect(collectIds(t, d).sort(), t.key).toEqual(['m1', 'p1', 'p2'])
+    }
+  })
+
+  it('keeps the news tags the vertical Cinema Update uses', () => {
+    const b = getTemplate('buzzlong')
+    const statuses = b.fields.find((f) => f.key === 'items').fields.find((f) => f.key === 'status').options
+    expect(statuses).toEqual(getTemplate('buzz').fields.find((f) => f.key === 'status').options)
+    const d = b.defaults()
+    for (const status of [...statuses, 'Something else', '']) {
+      expect(() => b.draw(fakeCtx(), b.duration(d) / 2, { ...d, items: [{ ...d.items[0], status }] }, A)).not.toThrow()
+    }
+  })
+
+  it('remembers Remembrance is black and white, and copes without a grayscale provider', () => {
+    const t = getTemplate('tributelong')
+    const d = t.defaults()
+    expect(d.blackAndWhite).toBe(true)
+    const mid = t.duration(d) / 2
+    expect(() => t.draw(fakeCtx(), mid, d, { img: () => null, video: () => null })).not.toThrow()
+    expect(() => t.draw(fakeCtx(), mid, { ...d, blackAndWhite: false }, A)).not.toThrow()
+  })
+
+  it('makes the two deep-dives chaptered rather than ranked', () => {
+    const r = getTemplate('reviewlong')
+    // A chapter needs more time on screen than a list slide, and ends on a verdict, not a CTA.
+    expect(r.defaults().secItem).toBeGreaterThan(getTemplate('spotlightlong').defaults().secItem)
+    expect(r.fields.some((f) => f.group === 'Verdict')).toBe(true)
+    expect(r.defaults().overall).toBeTruthy()
+    const d = r.defaults()
+    // The verdict ring is optional.
+    expect(() => r.draw(fakeCtx(), r.duration(d) - 0.5, { ...d, overall: '' }, A)).not.toThrow()
+    expect(() => r.draw(fakeCtx(), r.duration(d) - 0.5, { ...d, side: 'right' }, A)).not.toThrow()
   })
 })

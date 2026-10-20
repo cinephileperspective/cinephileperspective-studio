@@ -97,6 +97,7 @@ export default {
   label: 'Cinephile Review',
   short: 'Review',
   emoji: '\u{1F3AC}',
+  kind: 'short',
   size: [W, H],
   fps: 30,
   defaults: () => ({

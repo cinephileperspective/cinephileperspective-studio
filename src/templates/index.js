@@ -4,8 +4,28 @@ import tribute from './tribute.js'
 import review from './review.js'
 import rewind from './rewind.js'
 import spotlight from './spotlight.js'
+import festival from './festival.js'
+import countdown from './countdown.js'
+import buzzlong from './buzzlong.js'
+import birthdaylong from './birthdaylong.js'
+import tributelong from './tributelong.js'
+import rewindlong from './rewindlong.js'
+import reviewlong from './reviewlong.js'
+import spotlightlong from './spotlightlong.js'
 
-export const TEMPLATES = [buzz, birthday, tribute, rewind, review, spotlight]
+// Every Shorts template except Festival Wishes has a long-form counterpart, listed in the same
+// order so the two tabs read alike. Cinema Countdown is the extra, generic ranked list.
+export const TEMPLATES = [
+  buzz, birthday, tribute, rewind, review, spotlight, festival,
+  buzzlong, birthdaylong, tributelong, rewindlong, reviewlong, spotlightlong, countdown,
+]
+// The studio groups its templates by what they make: vertical Shorts, or a 16:9 long video.
+export const KINDS = [
+  { key: 'short', label: 'Shorts', hint: '1080\u00d71920 \u00b7 vertical' },
+  { key: 'long', label: 'Long video', hint: '1920\u00d71080 \u00b7 horizontal' },
+]
+export const kindOf = (tpl) => (tpl && tpl.kind === 'long' ? 'long' : 'short')
+export const templatesOfKind = (kind) => TEMPLATES.filter((t) => kindOf(t) === kind)
 export const getTemplate = (key) => TEMPLATES.find((t) => t.key === key) || TEMPLATES[0]
 
 // Merges saved data over fresh defaults so fields added later still get a value.

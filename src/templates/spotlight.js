@@ -29,6 +29,7 @@ export default {
   label: 'Weekend Watch',
   short: 'Weekend',
   emoji: '\u{1F37F}',
+  kind: 'short',
   size: [W, H],
   fps: 30,
   defaults: () => ({

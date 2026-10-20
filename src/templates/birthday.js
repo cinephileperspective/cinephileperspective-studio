@@ -10,6 +10,7 @@ export default {
   label: 'Star of the Day',
   short: 'Birthday',
   emoji: '\u{1F382}',
+  kind: 'short',
   size: [W, H],
   fps: 30,
   defaults: () => ({

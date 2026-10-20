@@ -41,6 +41,7 @@ export default {
   label: 'Remembrance',
   short: 'Tribute',
   emoji: '\u{1F56F}\uFE0F',
+  kind: 'short',
   size: [W, H],
   fps: 30,
   defaults: () => ({

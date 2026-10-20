@@ -6,6 +6,8 @@ export const BRAND = {
   watermark: 'Cinephile Perspective \u2122',
   storeKey: 'cinephile-studio-v1',
   fileApp: 'cinephile-studio',
+  // The IndexedDB store holding uploaded media. Renaming it orphans anything already uploaded.
+  assetDb: 'cinephile-studio',
 }
 
 export const COLORS = { midnight: '#0D0D12', gold: '#D4A63A', ivory: '#F4F1EA' }

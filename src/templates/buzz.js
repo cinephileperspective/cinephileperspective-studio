@@ -12,6 +12,7 @@ export default {
   label: 'Cinema Update',
   short: 'Update',
   emoji: '\u{1F4F0}',
+  kind: 'short',
   size: [W, H],
   fps: 30,
   defaults: () => ({

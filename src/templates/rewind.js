@@ -112,6 +112,7 @@ export default {
   label: 'Cinema Rewind',
   short: 'Rewind',
   emoji: '\u23EA',
+  kind: 'short',
   size: [W, H],
   fps: 30,
   defaults: () => ({
