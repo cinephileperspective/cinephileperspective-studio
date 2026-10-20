@@ -57,11 +57,11 @@ Every Shorts template except Festival Wishes has a long-form counterpart, keyed 
 - **Handing over the finished file** is `lib/save.js` + `lib/device.js`, shared by all three studios. `needsTapToSave()` is true on a handheld whose browser can share files: the export then waits behind a Share / Save button, because a share sheet needs a fresh tap and a long render has outlived the one that started it. Computers download straight away. `isHandheld()` is user-agent based and is only ever used to choose *how* to hand a file over, never whether a feature exists — that is always feature detection.
 - **Brand.** `src/brand.js` holds names, tagline, watermark text, storage key, the IndexedDB store name (`assetDb`) and font stacks. Templates use `FONTS` and `BRAND` rather than literals.
 - **Persistence.** Autosave: `localStorage` key `cinephile-studio-v1` (`{template, sound, data}` for all four templates; media ids only). Save project writes a JSON with the media embedded as data URLs (`{app, version, template, data, assets}`); Load restores it.
-- **Layout.** `App.vue` is the shell (template tabs, generic editor groups, export, cover JPG, save/load, shortcuts). `styles/shell.css` is the responsive shell: side panel at 900 px and wider, Edit/Preview tabs below.
+- **Layout.** `App.vue` is the shell (kind switch, template tabs, generic editor groups, export, cover JPG, save/load, shortcuts). "Save & load project" is deliberately an open section: loading a hand-written or generated project file is a normal way to start, and `app.test.js` asserts the control is visible without opening anything. `styles/shell.css` is the responsive shell: side panel at 900 px and wider, Edit/Preview tabs below.
 
 ## Gotchas
 
-- Keep key content inside the safe area (toggle it in "View & file"): top 250 px and bottom 420 px are covered by platform UI.
+- Keep key content inside the safe area (toggle it in "View & sound"): top 250 px and bottom 420 px are covered by platform UI.
 - `text()` in `lib/draw.js` corrects centred text for letter spacing.
 - Emoji in captions (Weekend Watch uses sparkle and camera emoji) depend on the system emoji font.
 - Preview only plays the music track. Clip sound is mixed in at export time.

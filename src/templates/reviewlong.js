@@ -14,7 +14,8 @@ import {
 // rather than a call to action. The sections mirror the vertical Review's score slides, so a Short
 // and a long review of the same film can be written from the same notes.
 
-const chapter = (heading = '', score = '', body = '') => ({ image: '', heading, score, body })
+const SHAPES = ['wide', 'poster', 'tall', 'square']
+const chapter = (heading = '', score = '', body = '') => ({ image: '', heading, score, body, x: 0.5, y: 0.25, zoom: 1 })
 
 export default {
   key: 'reviewlong',
@@ -42,7 +43,8 @@ export default {
     verdictS: 'Flawed in the middle, confident everywhere else. Worth a ticket.',
     verdictTag: BRAND.tagline,
     side: 'left',
-    shape: 'wide',
+    shape: 'poster',
+    fitWhole: false,
     look: 'Noir',
     bgStyle: 'Aurora',
     showRail: true,
@@ -65,10 +67,13 @@ export default {
       itemLabel: 'Chapter',
       newItem: chapter('', '', ''),
       fields: [
-        { key: 'image', label: 'Still for this chapter', type: 'image' },
+        { key: 'image', label: 'Still or poster for this chapter', type: 'image' },
         { key: 'heading', label: 'Chapter (Story, Performances, Music…)', type: 'text' },
         { key: 'score', label: 'Score or note for this chapter', type: 'text' },
         { key: 'body', label: 'What you think (**bold** for names)', type: 'textarea' },
+        { key: 'x', label: 'Picture: left ↔ right', type: 'range', min: 0, max: 1, step: 0.01 },
+        { key: 'y', label: 'Picture: top ↕ bottom (faces are usually near the top)', type: 'range', min: 0, max: 1, step: 0.01 },
+        { key: 'zoom', label: 'Picture: zoom', type: 'range', min: 1, max: 2.5, step: 0.01 },
       ],
     },
     { group: 'Verdict', key: 'overall', label: 'Overall score (blank to skip the ring)', type: 'text' },
@@ -78,7 +83,8 @@ export default {
     { group: 'Verdict', key: 'verdictTag', label: 'Closing tagline pill', type: 'text' },
     lookField(),
     wideBgField(),
-    { group: 'Look', key: 'shape', label: 'Still shape', type: 'select', options: ['wide', 'poster', 'square'] },
+    { group: 'Look', key: 'shape', label: 'Picture shape', type: 'select', options: SHAPES },
+    { group: 'Look', key: 'fitWhole', label: 'Show the whole picture (never crop it)', type: 'checkbox' },
     { group: 'Look', key: 'side', label: 'Still on the', type: 'select', options: ['left', 'right'] },
     { group: 'Look', key: 'showRail', label: 'Show the progress rail', type: 'checkbox' },
     { group: 'Look', key: 'watermark', label: 'Show channel watermark', type: 'checkbox' },
@@ -105,13 +111,18 @@ export default {
     } else if (at.scene === 'item') {
       const it = (d.items && d.items[at.i]) || {}
       chapterSlide(ctx, P, at.lt, at.dur, it, A, {
-        shape: ['wide', 'poster', 'square'].includes(d.shape) ? d.shape : 'wide',
+        shape: SHAPES.includes(d.shape) ? d.shape : 'poster',
         side: d.side === 'right' ? 'right' : 'left',
         chip: `Chapter ${at.i + 1} of ${n}`,
         heading: it.heading,
         note: it.score,
         body: it.body,
-        label: 'ADD STILL',
+        label: 'ADD PICTURE',
+        // Contain shows a tall poster whole; cover fills the box and crops, framed by x / y / zoom.
+        fit: d.fitWhole ? 'contain' : 'cover',
+        fx: Number.isFinite(+it.x) ? +it.x : 0.5,
+        fy: Number.isFinite(+it.y) ? +it.y : 0.25,
+        zoom: Math.max(1, +it.zoom || 1),
       })
       if (d.showRail) wideRail(ctx, P, at.i + 1, n)
     } else {

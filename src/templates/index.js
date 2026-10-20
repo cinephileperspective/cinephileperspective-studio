@@ -33,8 +33,37 @@ export function normalizeData(tpl, saved) {
   const base = tpl.defaults()
   if (!saved || typeof saved !== 'object') return base
   const out = { ...base }
-  for (const k of Object.keys(base)) if (saved[k] !== undefined && typeof saved[k] === typeof base[k]) out[k] = saved[k]
+  for (const k of Object.keys(base)) {
+    if (saved[k] === undefined || typeof saved[k] !== typeof base[k]) continue
+    // typeof [] is 'object', so an array field handed an object would pass and then break duration().
+    if (Array.isArray(base[k]) !== Array.isArray(saved[k])) continue
+    out[k] = saved[k]
+  }
   return out
+}
+
+// Which of a saved file's keys this template cannot use. Loading a file whose fields belong to a
+// different template used to look like success — the unusable keys were dropped and the defaults
+// shown instead — so the loader reports these to the user.
+export function unusedKeys(tpl, saved) {
+  const base = tpl.defaults()
+  const unknown = []
+  const wrongType = []
+  for (const k of Object.keys(saved || {})) {
+    if (saved[k] === undefined) continue
+    if (!(k in base)) unknown.push(k)
+    else if (typeof saved[k] !== typeof base[k] || Array.isArray(base[k]) !== Array.isArray(saved[k])) wrongType.push(k)
+  }
+  return { unknown, wrongType }
+}
+
+// A sentence describing what a load threw away, or '' when everything was used.
+export function loadWarning(tpl, saved) {
+  const { unknown, wrongType } = unusedKeys(tpl, saved)
+  const parts = []
+  if (unknown.length) parts.push(`"${tpl.label}" has no ${unknown.length === 1 ? 'field' : 'fields'} ${unknown.join(', ')}`)
+  if (wrongType.length) parts.push(`${wrongType.join(', ')} had the wrong type`)
+  return parts.length ? `Ignored: ${parts.join('; ')}. Those kept their defaults.` : ''
 }
 
 // Every asset id a project uses (images, videos, audio), found through the field definitions.

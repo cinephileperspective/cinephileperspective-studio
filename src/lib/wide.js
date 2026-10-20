@@ -321,8 +321,10 @@ export function hookCard(ctx, P, lt, { hook = '', note = '' } = {}) {
 }
 
 // One item slide. `shape` picks the picture box: a 2:3 poster, a 16:9 still or a square.
-export const SHAPES = { poster: [560, 840], wide: [880, 495], square: [700, 700] }
-export function itemSlide(ctx, P, lt, dur, item, A, { shape = 'poster', rank = 1, label = 'ADD IMAGE', rows = [], body = '', heading = '', zoom = 1, fx = 0.5, fy = 0.5, img = undefined, tag = '', tagColor = null, bodyMax = 5 } = {}) {
+// Picture boxes, drawn 1:1 on the canvas. `tall` is 9:16, for vertical posters and phone-shaped
+// artwork; `poster` is the 2:3 of a printed film poster. Both sit inside the title-safe area.
+export const SHAPES = { poster: [560, 840], wide: [880, 495], square: [700, 700], tall: [506, 900] }
+export function itemSlide(ctx, P, lt, dur, item, A, { shape = 'poster', rank = 1, label = 'ADD IMAGE', rows = [], body = '', heading = '', zoom = 1, fx = 0.5, fy = 0.5, img = undefined, tag = '', tagColor = null, bodyMax = 5, fit = 'cover' } = {}) {
   const a = easeOut(seg(lt, 0, 0.5))
   const out = 1 - easeInOut(seg(lt, dur - 0.35, 0.35))
   const slide = (1 - a) * 70
@@ -344,7 +346,7 @@ export function itemSlide(ctx, P, lt, dur, item, A, { shape = 'poster', rank = 1
   ctx.fill()
   ctx.shadowColor = 'transparent'
   // `img` lets a template hand over a prepared picture (Remembrance passes a grayscale copy).
-  cover(ctx, img === undefined ? A.img(item.image) : img, ix, iy, iw, ih, { radius: 24, label, zoom, fx, fy })
+  cover(ctx, img === undefined ? A.img(item.image) : img, ix, iy, iw, ih, { radius: 24, label, zoom, fx, fy, fit })
   ctx.restore()
 
   // Text column to the right of the picture.
@@ -391,7 +393,7 @@ export function itemSlide(ctx, P, lt, dur, item, A, { shape = 'poster', rank = 1
 // One chapter of a deep-dive: a labelled section with a picture and a longer piece of writing.
 // It shares listPlan/listAt with the list show; only the painting differs, because "title, setup,
 // N sections, closing" is the same shape whether the sections are ranked items or chapters.
-export function chapterSlide(ctx, P, lt, dur, item, A, { shape = 'wide', chip = '', heading = '', body = '', note = '', label = 'ADD IMAGE', img = undefined, zoom = 1, fx = 0.5, fy = 0.5, side = 'left' } = {}) {
+export function chapterSlide(ctx, P, lt, dur, item, A, { shape = 'wide', chip = '', heading = '', body = '', note = '', label = 'ADD IMAGE', img = undefined, zoom = 1, fx = 0.5, fy = 0.5, side = 'left', fit = 'cover' } = {}) {
   const a = easeOut(seg(lt, 0, 0.5))
   const out = 1 - easeInOut(seg(lt, dur - 0.35, 0.35))
   const slide = (1 - a) * 70
@@ -412,7 +414,7 @@ export function chapterSlide(ctx, P, lt, dur, item, A, { shape = 'wide', chip = 
   ctx.roundRect(ix - 14, iy - 14, iw + 28, ih + 28, 34)
   ctx.fill()
   ctx.shadowColor = 'transparent'
-  cover(ctx, img === undefined ? A.img(item.image) : img, ix, iy, iw, ih, { radius: 24, label, zoom, fx, fy })
+  cover(ctx, img === undefined ? A.img(item.image) : img, ix, iy, iw, ih, { radius: 24, label, zoom, fx, fy, fit })
   ctx.restore()
 
   const cx = left ? ix + iw + 70 : LSAFE.x
@@ -479,7 +481,7 @@ export function verdictCard(ctx, P, lt, { head = '', score = '', label = '', sub
 // Paints a whole list show for time `t`. Every list template's draw() is this call plus the
 // palette, because the scenes, the rail and the watermark placement are the same for all of them;
 // `itemOf(item, index)` is where a template says what its own slides contain.
-export function drawListShow(ctx, t, d, A, P, { bgDefault = 'Glow', shape = 'poster', imageLabel = 'ADD IMAGE', itemOf, shapes = ['poster', 'wide', 'square'] } = {}) {
+export function drawListShow(ctx, t, d, A, P, { bgDefault = 'Glow', shape = 'poster', imageLabel = 'ADD IMAGE', itemOf, shapes = ['poster', 'wide', 'tall', 'square'] } = {}) {
   const n = listCount(d)
   const at = listAt(d, t)
   wideBackdrop(ctx, P, WIDE_BACKGROUNDS.includes(d.bgStyle) ? d.bgStyle : bgDefault, t)
@@ -507,7 +509,7 @@ export function drawListShow(ctx, t, d, A, P, { bgDefault = 'Glow', shape = 'pos
 }
 
 // The fields every list show shares: the cards either side of the items, and the look.
-export const listShellFields = (lookField, { shapes = ['poster', 'wide', 'square'] } = {}) => [
+export const listShellFields = (lookField, { shapes = ['poster', 'wide', 'tall', 'square'] } = {}) => [
   { group: 'Content', key: 'kicker', label: 'Small heading (title card)', type: 'text' },
   { group: 'Content', key: 'title', label: 'Video title', type: 'text' },
   { group: 'Content', key: 'sub', label: 'Subtitle', type: 'text' },

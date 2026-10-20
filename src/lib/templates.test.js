@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { TEMPLATES, getTemplate, normalizeData, collectIds, audioPlan } from '../templates/index.js'
+import { TEMPLATES, getTemplate, normalizeData, collectIds, audioPlan, unusedKeys, loadWarning } from '../templates/index.js'
 import { shortsStatus, sizeStatus, fileSlug } from './files.js'
-import { mix, seg, easeBack, richLines } from './draw.js'
-import { listPlan, listAt, rankOf, listCount, LW, LH, WIDE_BACKGROUNDS } from './wide.js'
+import { mix, seg, easeBack, richLines, cover } from './draw.js'
+import { listPlan, listAt, rankOf, listCount, LW, LH, LSAFE, SHAPES, WIDE_BACKGROUNDS } from './wide.js'
 import { LOOKS } from './looks.js'
 import { OCCASIONS, CUSTOM, BACKDROPS } from '../templates/festival.js'
 
@@ -399,5 +399,125 @@ describe('every Shorts template except Festival Wishes has a long counterpart', 
     // The verdict ring is optional.
     expect(() => r.draw(fakeCtx(), r.duration(d) - 0.5, { ...d, overall: '' }, A)).not.toThrow()
     expect(() => r.draw(fakeCtx(), r.duration(d) - 0.5, { ...d, side: 'right' }, A)).not.toThrow()
+  })
+})
+
+describe('loading a project file', () => {
+  it('reports fields the chosen template cannot use', () => {
+    // Writing the short Review's fields under template "reviewlong" used to load silently and show
+    // the built-in placeholder chapters, which looked exactly like the file being ignored.
+    const tpl = getTemplate('reviewlong')
+    const warn = loadWarning(tpl, { title: 'Jailer 2', synopsis: '...', slides: [], reviewWord: 'Review' })
+    expect(warn).toContain('synopsis')
+    expect(warn).toContain('slides')
+    expect(warn).toContain('reviewWord')
+    expect(warn).toContain(tpl.label)
+    // A file that fits says nothing at all.
+    expect(loadWarning(tpl, { title: 'Jailer 2', items: [{ heading: 'Story', score: '6/10', body: 'x' }] })).toBe('')
+  })
+
+  it('reports values of the wrong type instead of quietly dropping them', () => {
+    const tpl = getTemplate('countdown')
+    const { unknown, wrongType } = unusedKeys(tpl, { secItem: '12', showRail: 'yes', title: 'Fine', nope: 1 })
+    expect(wrongType.sort()).toEqual(['secItem', 'showRail'])
+    expect(unknown).toEqual(['nope'])
+  })
+
+  it('refuses an array field handed something that is not an array', () => {
+    // typeof [] is 'object', so this once passed the type check and then made duration() NaN.
+    const tpl = getTemplate('reviewlong')
+    const d = normalizeData(tpl, { items: {} })
+    expect(Array.isArray(d.items)).toBe(true)
+    expect(Number.isFinite(tpl.duration(d))).toBe(true)
+    expect(loadWarning(tpl, { items: {} })).toContain('items')
+  })
+
+  it('accepts a hand-written file with content only, for every template', () => {
+    for (const tpl of TEMPLATES) {
+      const src = tpl.defaults()
+      // Content only: no timing, no colours, no media ids.
+      const content = {}
+      for (const f of tpl.fields) {
+        if (f.group === 'Timing & sound' || f.group === 'Photo position' || f.group === 'Look') continue
+        if (['image', 'images', 'video', 'audio', 'range', 'color'].includes(f.type)) continue
+        content[f.key] = src[f.key]
+      }
+      expect(loadWarning(tpl, content), tpl.key).toBe('')
+      const d = normalizeData(tpl, content)
+      expect(Number.isFinite(tpl.duration(d)), tpl.key).toBe(true)
+      expect(() => tpl.draw(fakeCtx(), tpl.duration(d) / 2, d, A), tpl.key).not.toThrow()
+    }
+  })
+})
+
+describe('fitting a picture into a chapter or slide', () => {
+  // A context that records what drawImage was asked to paint, so the geometry can be checked.
+  function recordingCtx() {
+    const calls = []
+    const base = fakeCtx()
+    return [
+      new Proxy(base, { get: (t, k) => (k === 'drawImage' ? (src, x, y, w, h) => calls.push({ x, y, w, h }) : Reflect.get(t, k)) }),
+      calls,
+    ]
+  }
+  const img = (w, h) => ({ width: w, height: h })
+
+  it('gives every shape a box inside the title-safe area', () => {
+    for (const [name, [w, h]] of Object.entries(SHAPES)) {
+      const y = Math.round((LH - h) / 2)
+      expect(w, name).toBeLessThanOrEqual(LSAFE.w)
+      expect(y, name).toBeGreaterThanOrEqual(LSAFE.y)
+      expect(y + h, name).toBeLessThanOrEqual(LSAFE.y + LSAFE.h)
+    }
+  })
+
+  it('has a tall box shaped for vertical posters', () => {
+    const [w, h] = SHAPES.tall
+    expect(h).toBeGreaterThan(w)
+    // Within a pixel of 9:16, so a 1080x1920 poster needs essentially no cropping.
+    expect(Math.abs(w / h - 9 / 16)).toBeLessThan(0.005)
+  })
+
+  it('cover fills the box and crops the overflow', () => {
+    const [ctx, calls] = recordingCtx()
+    cover(ctx, img(1080, 1920), 0, 0, ...SHAPES.wide)
+    const [w, h] = SHAPES.wide
+    const d = calls[0]
+    expect(d.w).toBeGreaterThanOrEqual(w - 1)
+    expect(d.h).toBeGreaterThan(h) // taller than the box: the overflow is what gets cut
+  })
+
+  it('contain scales the whole picture to fit, cropping nothing', () => {
+    for (const shape of Object.keys(SHAPES)) {
+      const [w, h] = SHAPES[shape]
+      for (const src of [img(1080, 1920), img(1000, 1500), img(1920, 1080), img(800, 800)]) {
+        const [ctx, calls] = recordingCtx()
+        cover(ctx, src, 0, 0, w, h, { fit: 'contain' })
+        const d = calls[0]
+        expect(d.w, `${shape} ${src.width}x${src.height}`).toBeLessThanOrEqual(w + 0.5)
+        expect(d.h, `${shape} ${src.width}x${src.height}`).toBeLessThanOrEqual(h + 0.5)
+        // The aspect ratio is kept, so nothing is squashed.
+        expect(Math.abs(d.w / d.h - src.width / src.height)).toBeLessThan(0.01)
+        // And it is centred in the box.
+        expect(Math.abs((d.x + d.w / 2) - w / 2)).toBeLessThan(0.5)
+        expect(Math.abs((d.y + d.h / 2) - h / 2)).toBeLessThan(0.5)
+      }
+    }
+  })
+
+  it('lets the long review pick a tall box and show a poster whole', () => {
+    const r = getTemplate('reviewlong')
+    const shapes = r.fields.find((f) => f.key === 'shape').options
+    expect(shapes).toContain('tall')
+    expect(r.fields.some((f) => f.key === 'fitWhole' && f.type === 'checkbox')).toBe(true)
+    expect(r.defaults().fitWhole).toBe(false) // cropping stays the default
+    const item = r.fields.find((f) => f.key === 'items').fields.map((f) => f.key)
+    expect(item).toEqual(expect.arrayContaining(['x', 'y', 'zoom']))
+    const d = r.defaults()
+    for (const shape of shapes) {
+      for (const fitWhole of [false, true]) {
+        expect(() => r.draw(fakeCtx(), d.secTitle + d.secHook + 1, { ...d, shape, fitWhole }, A), `${shape}/${fitWhole}`).not.toThrow()
+      }
+    }
   })
 })

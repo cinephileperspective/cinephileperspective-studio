@@ -81,6 +81,20 @@ describe('App', () => {
     expect(saved.data.review.title).toBe('Test Movie')
     vi.useRealTimers()
   })
+
+  it('shows the Load project control without having to open a section', async () => {
+    const { default: App } = await import('./App.vue')
+    const w = mount(App, { attachTo: document.body })
+    await flushPromises()
+    // This was once buried in a collapsed "View & file" section, which made loading a
+    // hand-written project file look unsupported.
+    const loader = w.findAll('label.btn').find((l) => l.text().includes('Load project'))
+    expect(loader).toBeTruthy()
+    expect(loader.find('input[type=file]').attributes('accept')).toContain('json')
+    const section = loader.element.closest('details')
+    expect(section).toBeTruthy()
+    expect(section.hasAttribute('open'), 'the section holding Load project must start open').toBe(true)
+  })
 })
 
 describe('App on a phone without fast export (older iPhone)', () => {

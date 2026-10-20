@@ -1,7 +1,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { BRAND, FONT_LOADS } from './brand.js'
-import { TEMPLATES, KINDS, getTemplate, kindOf, templatesOfKind, normalizeData, collectIds, audioPlan } from './templates/index.js'
+import { TEMPLATES, KINDS, getTemplate, kindOf, templatesOfKind, normalizeData, collectIds, audioPlan, loadWarning } from './templates/index.js'
 import { useClock, useMusicPreview } from './lib/useClock.js'
 import { hydrate, prune, exportAssets, importAssets } from './lib/assets.js'
 import { exportCaps, pickMethod, exportBlocker, renderVideo, recordVideo, renderStill, keepAwake } from './lib/exporter.js'
@@ -220,10 +220,15 @@ function loadFile(file) {
     } catch {
       notify('Loaded, but some media could not be restored.', true)
     }
-    project.data[o.template] = normalizeData(getTemplate(o.template), o.data)
+    const loaded = getTemplate(o.template)
+    // Say what could not be used. A file written for a different template loads "successfully" and
+    // then shows the defaults, which is far more confusing than being told.
+    const warn = loadWarning(loaded, o.data)
+    project.data[o.template] = normalizeData(loaded, o.data)
     project.template = o.template
+    lastOfKind[kindOf(loaded)] = o.template
     clock.seekTime(0)
-    notify('Loaded ' + file.name)
+    notify(`Loaded ${file.name} into "${loaded.label}". ${warn}`.trim(), !!warn)
   }
   r.onerror = () => notify('Could not read the file.', true)
   r.readAsText(file)
@@ -313,15 +318,20 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey))
           <p class="help">Clip sound and music are mixed into the exported file. The preview plays the music track only.</p>
         </details>
 
+        <details open>
+          <summary>Save &amp; load project</summary>
+          <div class="btnrow">
+            <label class="btn primary">Load project (JSON)<input type="file" accept="application/json,.json" hidden @change="loadFile($event.target.files[0]); $event.target.value = ''"></label>
+            <button @click="save">Save project</button>
+          </div>
+          <p class="help">Save writes a JSON with your photos and clips embedded. Load accepts that file, or one written by hand — see CONTENT-FORMAT.md for the fields each template takes. Pictures are uploads, so add those after loading.</p>
+          <div class="btnrow"><button class="danger" @click="resetTemplate">Reset this template</button></div>
+        </details>
+
         <details>
-          <summary>View &amp; file</summary>
+          <summary>View &amp; sound</summary>
           <label class="chk"><input type="checkbox" v-model="ui.safe"> Show platform safe area</label>
           <label class="chk"><input type="checkbox" v-model="ui.sound"> Sound on (preview and export)</label>
-          <div class="btnrow">
-            <button @click="save">Save project</button>
-            <label class="btn">Load project<input type="file" accept="application/json,.json" hidden @change="loadFile($event.target.files[0]); $event.target.value = ''"></label>
-            <button class="danger" @click="resetTemplate">Reset template</button>
-          </div>
           <p class="help">Space plays or pauses, R restarts, Esc cancels an export.</p>
         </details>
       </div>

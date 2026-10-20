@@ -1,0 +1,39 @@
+{
+  "app": "cinephile-studio",
+  "version": 1,
+  "template": "reviewlong",
+  "data": {
+    "kicker": "Cinephile Review",
+    "title": "Jailer 2",
+    "sub": "Directed by Nelson Dilipkumar",
+    "hook": "Tiger Muthuvel Pandian is back. Does the sequel earn it?",
+    "hookNote": "Spoiler-free: nothing past the first act.",
+    "items": [
+      {
+        "heading": "Rajinikanth",
+        "score": "8.5/10",
+        "body": "**Rajinikanth** does what only he can, and the film knows it. Every entry lands, and he underplays the quieter beats far more than the trailer suggests."
+      },
+      {
+        "heading": "Humour & mass moments",
+        "score": "7.5/10",
+        "body": "**Nelson** stages the setpieces with real confidence. The comedy is hit and miss, but when it lands the theatre goes up."
+      },
+      {
+        "heading": "Story",
+        "score": "6.0/10",
+        "body": "The thinnest part. The plot exists to move Pandian between confrontations, and the new threat never feels like one."
+      },
+      {
+        "heading": "Pace & editing",
+        "score": "5.5/10",
+        "body": "The middle hour drags badly. Twenty minutes could come out and nobody would miss them."
+      }
+    ],
+    "overall": "6.5/10",
+    "overallLabel": "Overall",
+    "verdictH": "The verdict",
+    "verdictS": "A star vehicle that works whenever it remembers it is one. Go for Rajinikanth, not the plot.",
+    "verdictTag": "Beyond the Screen. Into the Story."
+  }
+}

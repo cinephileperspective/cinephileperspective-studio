@@ -23,8 +23,11 @@ export const mix = (a, b, k) => {
 
 export const srcSize = (s) => [s.naturalWidth || s.videoWidth || s.width || 0, s.naturalHeight || s.videoHeight || s.height || 0]
 
-// Fills a rectangle with an image/video frame, cropping like CSS object-fit: cover.
-export function cover(ctx, src, x, y, w, h, { radius = 0, zoom = 1, fx = 0.5, fy = 0.5, label = 'ADD IMAGE' } = {}) {
+// Puts an image/video frame in a rectangle. `fit: 'cover'` (the default) fills the box and crops the
+// overflow, like CSS object-fit: cover. `fit: 'contain'` scales the whole picture to fit inside
+// instead, leaving the box's background showing around it — which is what a tall poster in a wide
+// slot needs, since cropping one loses most of its height.
+export function cover(ctx, src, x, y, w, h, { radius = 0, zoom = 1, fx = 0.5, fy = 0.5, label = 'ADD IMAGE', fit = 'cover' } = {}) {
   ctx.save()
   ctx.beginPath()
   if (radius) ctx.roundRect(x, y, w, h, radius)
@@ -32,7 +35,7 @@ export function cover(ctx, src, x, y, w, h, { radius = 0, zoom = 1, fx = 0.5, fy
   ctx.clip()
   const [iw, ih] = src ? srcSize(src) : [0, 0]
   if (iw && ih) {
-    const k = Math.max(w / iw, h / ih) * zoom
+    const k = (fit === 'contain' ? Math.min(w / iw, h / ih) : Math.max(w / iw, h / ih)) * zoom
     ctx.drawImage(src, x + (w - iw * k) * fx, y + (h - ih * k) * fy, iw * k, ih * k)
   } else {
     ctx.fillStyle = '#25252d'
