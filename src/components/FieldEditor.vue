@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { addFile, getAsset, assetTick } from '../lib/assets.js'
 
 const props = defineProps({ field: { type: Object, required: true }, obj: { type: Object, required: true } })
@@ -29,6 +29,38 @@ async function pick(e) {
     } else if (files[0]) props.obj[k] = await addFile(files[0])
   } catch (err) {
     emit('notify', err.message || 'Could not add that file.', true)
+  }
+}
+const link = ref('')
+const loading = ref(false)
+// Fetches an image from a web address. The server must allow cross-origin reads (Wikimedia, TMDB and
+// most CDNs do); otherwise the browser blocks it and the user is told to download and upload instead.
+async function fromUrl() {
+  const raw = link.value.trim()
+  if (!raw || loading.value) return
+  let url
+  try {
+    url = new URL(raw)
+    if (!/^https?:$/.test(url.protocol)) throw new Error()
+  } catch {
+    emit('notify', 'That is not a web address (it should start with https://).', true)
+    return
+  }
+  loading.value = true
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error(`The site answered ${res.status}.`)
+    const blob = await res.blob()
+    if (!blob.type.startsWith('image/')) throw new Error('That address is not an image file.')
+    const name = decodeURIComponent(url.pathname.split('/').pop() || 'image') || 'image'
+    const file = new File([blob], name, { type: blob.type })
+    props.obj[props.field.key] = await addFile(file)
+    link.value = ''
+  } catch (err) {
+    const blocked = err instanceof TypeError
+    emit('notify', blocked ? 'That site does not allow loading its images here. Save the image and use Choose instead.' : err.message || 'Could not load that image.', true)
+  } finally {
+    loading.value = false
   }
 }
 function move(arr, i, dir) {
@@ -84,6 +116,10 @@ const addItem = () => props.obj[props.field.key].push({ ...props.field.newItem }
         <span v-else class="fname dim">None</span>
         <label class="add file">{{ asset ? 'Replace' : 'Choose' }}<input type="file" :accept="ACCEPT[field.type]" hidden @change="pick"></label>
         <button v-if="obj[field.key]" class="mini" aria-label="Remove file" @click="obj[field.key] = ''">✕</button>
+      </div>
+      <div v-if="field.type === 'image'" class="filerow urlrow">
+        <input type="url" v-model="link" placeholder="…or paste an image link (https://)" aria-label="Image link" @keydown.enter.prevent="fromUrl">
+        <button class="add" :disabled="loading || !link.trim()" @click="fromUrl">{{ loading ? 'Loading…' : 'Load' }}</button>
       </div>
     </template>
 
