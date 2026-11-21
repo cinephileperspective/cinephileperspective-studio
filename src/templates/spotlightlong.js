@@ -1,6 +1,6 @@
 import { BRAND } from '../brand.js'
 import { pal, lookField } from '../lib/looks.js'
-import { LW, LH, drawListShow, listShellFields, listShellDefaults, listThumbTime, listDuration, listTimingFields } from '../lib/wide.js'
+import { LW, LH, drawListShow, listShellFields, listShellDefaults, listThumbTime, listDuration, listTimingFields, itemSecField } from '../lib/wide.js'
 
 // Weekend Watch, long form: the theatre and OTT roundup with room to actually talk about each film.
 // Cinema Countdown is the generic ranked list; this one is the weekly what-to-watch, so every slide
@@ -50,6 +50,7 @@ export default {
         { key: 'director', label: 'Director', type: 'text' },
         { key: 'where', label: 'Where to watch (In theatres, Streaming…)', type: 'text' },
         { key: 'body', label: 'Why watch it (**bold** for names)', type: 'textarea' },
+        itemSecField(),
       ],
     },
     ...listShellFields(lookField),

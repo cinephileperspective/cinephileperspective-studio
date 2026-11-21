@@ -3,7 +3,7 @@ import { LOOKS, pal, lookField } from '../lib/looks.js'
 import {
   LW, LH, LSAFE, wideBackdrop, wideBgField, WIDE_BACKGROUNDS, wideRail, wideWatermark,
   titleCard, hookCard, itemSlide, ctaCard,
-  listPlan, listAt, listCount, listDuration, rankOf, listTimingFields, listTimingDefaults,
+  listPlan, listAt, listCount, listDuration, rankOf, listTimingFields, listTimingDefaults, itemSecField
 } from '../lib/wide.js'
 
 // Cinema Countdown: the long-form (16:9) list show. Title card, hook, one slide per film, closing
@@ -64,6 +64,7 @@ export default {
         { key: 'year', label: 'Year / director', type: 'text' },
         { key: 'rating', label: 'Rating or where to watch', type: 'text' },
         { key: 'body', label: 'Why watch it (**bold** for names)', type: 'textarea' },
+        itemSecField(),
       ],
     },
     { group: 'Content', key: 'ctaH', label: 'Closing heading', type: 'text' },
@@ -81,7 +82,7 @@ export default {
   thumbTime: (d) => {
     const p = listPlan(d)
     // The first film, settled: the most useful frame for a cover.
-    return p.title + p.hook + Math.min(p.item - 0.2, 1.2)
+    return p.title + p.hook + Math.min(p.durs[0] - 0.2, 1.2)
   },
   fileName: (d) => d.title,
 

@@ -1,6 +1,6 @@
 import { BRAND } from '../brand.js'
 import { pal, lookField } from '../lib/looks.js'
-import { LW, LH, drawListShow, listShellFields, listShellDefaults, listThumbTime, listDuration, listTimingFields } from '../lib/wide.js'
+import { LW, LH, drawListShow, listShellFields, listShellDefaults, listThumbTime, listDuration, listTimingFields, itemSecField } from '../lib/wide.js'
 
 // Cinema Rewind, long form: a run of anniversaries. One slide per film, each saying how long ago it
 // came out and why it is still worth talking about.
@@ -48,6 +48,7 @@ export default {
         { key: 'years', label: 'Anniversary line (e.g. 10 Years Of)', type: 'text' },
         { key: 'released', label: 'Release line (e.g. Released 29 June 2015)', type: 'text' },
         { key: 'body', label: 'Why it still matters (**bold** for names)', type: 'textarea' },
+        itemSecField(),
       ],
     },
     ...listShellFields(lookField, { shapes: ['wide', 'poster', 'square'] }),

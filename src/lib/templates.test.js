@@ -237,6 +237,19 @@ describe('long video (16:9 list show)', () => {
     expect(listAt(d, firstItem + p.n * p.item - 0.001).i).toBe(p.n - 1)
   })
 
+  it('lets each item set its own length, blank falling back to the default', () => {
+    const d = cd.defaults()
+    d.items[0].sec = 12
+    d.items[1].sec = ''
+    const p = listPlan(d)
+    expect(p.durs).toEqual([12, p.item, p.item])
+    expect(cd.duration(d)).toBeCloseTo(p.title + p.hook + 12 + 2 * p.item + p.cta)
+    const start = p.title + p.hook
+    expect(listAt(d, start + 11.9)).toMatchObject({ scene: 'item', i: 0, dur: 12 })
+    expect(listAt(d, start + 12.1)).toMatchObject({ scene: 'item', i: 1, dur: p.item })
+    expect(listAt(d, p.total - 0.1).scene).toBe('cta')
+  })
+
   it('skips the hook card when there is no hook text', () => {
     const d = { ...cd.defaults(), hook: '   ' }
     expect(listPlan(d).hook).toBe(0)

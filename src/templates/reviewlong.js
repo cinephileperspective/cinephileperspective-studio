@@ -3,7 +3,7 @@ import { pal, lookField } from '../lib/looks.js'
 import {
   LW, LH, LSAFE, wideBackdrop, wideBgField, WIDE_BACKGROUNDS, wideRail, wideWatermark,
   titleCard, hookCard, chapterSlide, verdictCard,
-  listPlan, listAt, listCount, listDuration, listTimingFields, listTimingDefaults,
+  listPlan, listAt, listCount, listDuration, listTimingFields, listTimingDefaults, itemSecField
 } from '../lib/wide.js'
 
 // Cinephile Review, long form: a deep-dive, not a ranked list.
@@ -74,6 +74,7 @@ export default {
         { key: 'x', label: 'Picture: left ↔ right', type: 'range', min: 0, max: 1, step: 0.01 },
         { key: 'y', label: 'Picture: top ↕ bottom (faces are usually near the top)', type: 'range', min: 0, max: 1, step: 0.01 },
         { key: 'zoom', label: 'Picture: zoom', type: 'range', min: 1, max: 2.5, step: 0.01 },
+        itemSecField(),
       ],
     },
     { group: 'Verdict', key: 'overall', label: 'Overall score (blank to skip the ring)', type: 'text' },
@@ -94,7 +95,7 @@ export default {
   thumbTime: (d) => {
     const p = listPlan(d)
     // The first chapter, settled.
-    return p.title + p.hook + Math.min(p.item - 0.2, 1.4)
+    return p.title + p.hook + Math.min(p.durs[0] - 0.2, 1.4)
   },
   fileName: (d) => d.title,
 

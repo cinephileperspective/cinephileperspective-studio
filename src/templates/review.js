@@ -11,7 +11,7 @@ const TR = 0.5
 function scenes(d) {
   const list = [{ kind: 'title', dur: Math.max(1, +d.titleSec || 3.5) }]
   if (String(d.synopsis || '').trim()) list.push({ kind: 'synopsis', dur: Math.max(2, +d.synopsisSec || 8) })
-  for (const sl of d.slides || []) list.push({ kind: 'slide', sl, dur: Math.max(1, +d.slideSec || 4) })
+  for (const sl of d.slides || []) list.push({ kind: 'slide', sl, dur: +sl.sec > 0 ? Math.min(60, Math.max(1, +sl.sec)) : Math.max(1, +d.slideSec || 4) })
   if (String(d.overall || '').trim()) list.push({ kind: 'overall', dur: Math.max(1, +d.slideSec || 4) + 1 })
   let start = 0
   for (const s of list) {
@@ -135,6 +135,7 @@ export default {
         { key: 'image', label: 'Image / still', type: 'image' },
         { key: 'label', label: 'Heading (Acting, Music, Nivin Pauly\u2026)', type: 'text' },
         { key: 'value', label: 'Score or note (8.0/10, CAMEO)', type: 'text' },
+        { key: 'sec', label: 'Seconds on this slide (blank = default)', type: 'number', min: 1, max: 60, step: 0.5 },
       ],
     },
     { group: 'Content', key: 'overall', label: 'Overall score (blank to skip)', type: 'text' },
@@ -153,7 +154,7 @@ export default {
     { group: 'Look', key: 'overallLabel', label: 'Overall heading', type: 'text' },
     { group: 'Timing & sound', key: 'titleSec', label: 'Title slide (s)', type: 'number', min: 1, max: 20 },
     { group: 'Timing & sound', key: 'synopsisSec', label: 'Synopsis slide (s)', type: 'number', min: 2, max: 30 },
-    { group: 'Timing & sound', key: 'slideSec', label: 'Each score slide (s)', type: 'number', min: 1, max: 20 },
+    { group: 'Timing & sound', key: 'slideSec', label: 'Each score slide (s, unless set on the slide)', type: 'number', min: 1, max: 20 },
     { group: 'Timing & sound', key: 'audio', label: 'Background music (optional)', type: 'audio' },
     { group: 'Timing & sound', key: 'musicVol', label: 'Music volume', type: 'range', min: 0, max: 1, step: 0.05 },
   ],

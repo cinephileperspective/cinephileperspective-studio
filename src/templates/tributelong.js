@@ -1,6 +1,6 @@
 import { BRAND } from '../brand.js'
 import { pal, lookField } from '../lib/looks.js'
-import { LW, LH, drawListShow, listShellFields, listShellDefaults, listThumbTime, listDuration, listTimingFields } from '../lib/wide.js'
+import { LW, LH, drawListShow, listShellFields, listShellDefaults, listThumbTime, listDuration, listTimingFields, itemSecField } from '../lib/wide.js'
 
 // Remembrance, long form: several people remembered in one video. Like the vertical template, the
 // photographs default to black and white — and for the same reason, it is a baked grayscale copy
@@ -54,6 +54,7 @@ export default {
         { key: 'x', label: 'Photo: left ↔ right', type: 'range', min: 0, max: 1, step: 0.01 },
         { key: 'y', label: 'Photo: top ↕ bottom', type: 'range', min: 0, max: 1, step: 0.01 },
         { key: 'zoom', label: 'Photo: zoom', type: 'range', min: 1, max: 2.5, step: 0.01 },
+        itemSecField(),
       ],
     },
     { group: 'Look', key: 'blackAndWhite', label: 'Black and white photographs', type: 'checkbox' },

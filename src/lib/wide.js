@@ -239,6 +239,12 @@ export function listCount(d) {
   return Math.max(1, (d.items || []).length)
 }
 
+// Seconds for item `i`: its own `sec` when set, otherwise the show-wide default.
+export const itemSec = (d, i, def = wsec(d.secItem, 7, 2)) => {
+  const own = +((d.items || [])[i] || {}).sec
+  return own > 0 ? Math.min(120, Math.max(2, own)) : def
+}
+
 // Scene boundaries for the whole video.
 export function listPlan(d) {
   const n = listCount(d)
@@ -246,7 +252,9 @@ export function listPlan(d) {
   const hook = String(d.hook || '').trim() ? wsec(d.secHook, 3) : 0
   const item = wsec(d.secItem, 7, 2)
   const cta = wsec(d.secCta, 4)
-  return { n, title, hook, item, cta, total: title + hook + n * item + cta }
+  const durs = Array.from({ length: n }, (_, i) => itemSec(d, i, item))
+  const items = durs.reduce((a, b) => a + b, 0)
+  return { n, title, hook, item, durs, cta, total: title + hook + items + cta }
 }
 
 export const listDuration = (d) => listPlan(d).total
@@ -259,11 +267,13 @@ export function listAt(d, t) {
   lt -= p.title
   if (p.hook && lt < p.hook) return { scene: 'hook', i: -1, lt, dur: p.hook, plan: p }
   lt -= p.hook
-  if (lt < p.n * p.item) {
-    const i = Math.min(p.n - 1, Math.floor(lt / p.item))
-    return { scene: 'item', i, lt: lt - i * p.item, dur: p.item, plan: p }
+  const items = p.durs.reduce((a, b) => a + b, 0)
+  if (lt < items) {
+    let i = 0
+    while (i < p.n - 1 && lt >= p.durs[i]) lt -= p.durs[i++]
+    return { scene: 'item', i, lt, dur: p.durs[i], plan: p }
   }
-  lt -= p.n * p.item
+  lt -= items
   return { scene: 'cta', i: -1, lt, dur: p.cta, plan: p }
 }
 
@@ -279,6 +289,9 @@ export const listTimingFields = () => [
   { group: 'Timing & sound', key: 'audio', label: 'Music (optional)', type: 'audio' },
   { group: 'Timing & sound', key: 'musicVol', label: 'Music volume', type: 'range', min: 0, max: 1, step: 0.05 },
 ]
+
+// Optional per-item length, appended to a list's nested fields. Blank uses "Seconds per item".
+export const itemSecField = () => ({ key: 'sec', label: 'Seconds on this one (blank = default)', type: 'number', min: 2, max: 120, step: 0.5 })
 
 export const listTimingDefaults = () => ({ secTitle: 3, secHook: 3, secItem: 7, secCta: 4, audio: '', musicVol: 0.75 })
 
@@ -548,7 +561,7 @@ export const listShellDefaults = (over = {}) => ({
 // The cover frame for a list show: the first item, settled.
 export const listThumbTime = (d) => {
   const p = listPlan(d)
-  return p.title + p.hook + Math.min(p.item - 0.2, 1.2)
+  return p.title + p.hook + Math.min(p.durs[0] - 0.2, 1.2)
 }
 
 export function ctaCard(ctx, P, lt, { head = '', sub = '', tag = '' } = {}) {

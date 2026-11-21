@@ -1,6 +1,6 @@
 import { BRAND } from '../brand.js'
 import { pal, lookField } from '../lib/looks.js'
-import { LW, LH, drawListShow, listShellFields, listShellDefaults, listThumbTime, listDuration, listTimingFields } from '../lib/wide.js'
+import { LW, LH, drawListShow, listShellFields, listShellDefaults, listThumbTime, listDuration, listTimingFields, itemSecField } from '../lib/wide.js'
 
 // Cinema Update, long form: a news bulletin. One slide per story, each tagged Official, Reported or
 // Rumour exactly as the vertical Cinema Update tags a single story.
@@ -54,6 +54,7 @@ export default {
         { key: 'status', label: 'Status tag', type: 'select', options: STATUSES },
         { key: 'source', label: 'Source line', type: 'text' },
         { key: 'body', label: 'What happened (**bold** for names)', type: 'textarea' },
+        itemSecField(),
       ],
     },
     ...listShellFields(lookField, { shapes: ['wide', 'poster', 'square'] }),
