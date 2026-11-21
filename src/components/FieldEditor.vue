@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { addFile, getAsset, assetTick } from '../lib/assets.js'
+import { addImageUrl } from '../lib/imageUrl.js'
 
 const props = defineProps({ field: { type: Object, required: true }, obj: { type: Object, required: true } })
 const emit = defineEmits(['notify', 'seek'])
@@ -33,32 +34,15 @@ async function pick(e) {
 }
 const link = ref('')
 const loading = ref(false)
-// Fetches an image from a web address. The server must allow cross-origin reads (Wikimedia, TMDB and
-// most CDNs do); otherwise the browser blocks it and the user is told to download and upload instead.
 async function fromUrl() {
   const raw = link.value.trim()
   if (!raw || loading.value) return
-  let url
-  try {
-    url = new URL(raw)
-    if (!/^https?:$/.test(url.protocol)) throw new Error()
-  } catch {
-    emit('notify', 'That is not a web address (it should start with https://).', true)
-    return
-  }
   loading.value = true
   try {
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`The site answered ${res.status}.`)
-    const blob = await res.blob()
-    if (!blob.type.startsWith('image/')) throw new Error('That address is not an image file.')
-    const name = decodeURIComponent(url.pathname.split('/').pop() || 'image') || 'image'
-    const file = new File([blob], name, { type: blob.type })
-    props.obj[props.field.key] = await addFile(file)
+    props.obj[props.field.key] = await addImageUrl(raw)
     link.value = ''
   } catch (err) {
-    const blocked = err instanceof TypeError
-    emit('notify', blocked ? 'That site does not allow loading its images here. Save the image and use Choose instead.' : err.message || 'Could not load that image.', true)
+    emit('notify', err.message || 'Could not load that image.', true)
   } finally {
     loading.value = false
   }

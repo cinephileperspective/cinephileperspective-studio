@@ -3,6 +3,7 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { BRAND, FONT_LOADS } from './brand.js'
 import { TEMPLATES, KINDS, getTemplate, kindOf, templatesOfKind, normalizeData, collectIds, audioPlan, loadWarning } from './templates/index.js'
 import { useClock, useMusicPreview } from './lib/useClock.js'
+import { resolveImageUrls } from './lib/imageUrl.js'
 import { hydrate, prune, exportAssets, importAssets } from './lib/assets.js'
 import { exportCaps, pickMethod, exportBlocker, renderVideo, recordVideo, renderStill, keepAwake } from './lib/exporter.js'
 import { download, fileSlug, sizeStatus } from './lib/files.js'
@@ -224,11 +225,15 @@ function loadFile(file) {
     // Say what could not be used. A file written for a different template loads "successfully" and
     // then shows the defaults, which is far more confusing than being told.
     const warn = loadWarning(loaded, o.data)
-    project.data[o.template] = normalizeData(loaded, o.data)
+    const data = normalizeData(loaded, o.data)
+    notify('Loading images from links…')
+    const failed = await resolveImageUrls(loaded.fields, data)
+    project.data[o.template] = data
     project.template = o.template
     lastOfKind[kindOf(loaded)] = o.template
     clock.seekTime(0)
-    notify(`Loaded ${file.name} into "${loaded.label}". ${warn}`.trim(), !!warn)
+    const bad = failed.length ? ` Could not load ${failed.length} image link${failed.length === 1 ? '' : 's'}: ${failed.join('; ')}.` : ''
+    notify(`Loaded ${file.name} into "${loaded.label}". ${warn}${bad}`.trim(), !!warn || !!bad)
   }
   r.onerror = () => notify('Could not read the file.', true)
   r.readAsText(file)

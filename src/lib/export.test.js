@@ -154,3 +154,25 @@ describe('recordVideo (real-time export, with a pretend MediaRecorder)', () => {
     expect(document.querySelectorAll('canvas')).toHaveLength(0)
   })
 })
+
+describe('image links in project files', () => {
+  it('replaces an image address with a stored asset id and reports failures', async () => {
+    const { resolveImageUrls } = await import('./imageUrl.js')
+    const real = globalThis.fetch
+    const realBmp = globalThis.createImageBitmap
+    globalThis.createImageBitmap = async () => ({ width: 10, height: 10, close() {} })
+    globalThis.fetch = async (u) => (String(u).includes('good') ? new Response(new Blob(['x'], { type: 'image/png' })) : new Response('', { status: 404 }))
+    try {
+      const fields = [{ key: 'poster', type: 'image' }, { key: 'items', type: 'list', fields: [{ key: 'image', type: 'image' }] }]
+      const data = { poster: 'https://x.test/good.png', items: [{ image: 'https://x.test/bad.png' }, { image: 'abc123' }] }
+      const failed = await resolveImageUrls(fields, data)
+      expect(data.poster).toMatch(/^[\w-]+$/)
+      expect(data.items[0].image).toBe('')
+      expect(data.items[1].image).toBe('abc123')
+      expect(failed).toHaveLength(1)
+    } finally {
+      globalThis.fetch = real
+      globalThis.createImageBitmap = realBmp
+    }
+  })
+})

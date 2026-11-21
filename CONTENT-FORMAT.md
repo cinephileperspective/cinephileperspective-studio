@@ -87,7 +87,7 @@ your content fits. Rename the fields and reload.
 | `spotlightlong` | Weekend Watch (long) | `heading` film title · `cast` comma separated · `director` · `where` `In theatres` / `Streaming` · `body` why watch it |
 | `countdown` | Cinema Countdown | `heading` film title · `year` year/director · `rating` rating or where to watch · `body` why it is on the list |
 
-Every item also takes an `image`, but that is an upload — leave it out.
+Every item also takes an `image`: either upload it in the studio, or put a direct link to the picture file (`https://…/poster.jpg`) and it is fetched when the project loads. The site must allow other pages to read its images (Wikimedia and TMDB do); a link that cannot be loaded is reported and left blank.
 
 `reviewlong` additionally takes `overall` (e.g. `7.8/10`), `overallLabel` (e.g. `Overall`),
 `verdictH`, `verdictS`, `verdictTag`.
@@ -142,7 +142,7 @@ complete copy in `jailer2-reviewlong.json` next to this file.
 | `date` | text | optional, e.g. `18 OCT 2026` |
 | `label` | text | the label strip, e.g. `Cinema Buzz` |
 
-Upload yourself: `image` (poster / still / first look).
+Upload yourself, or give a direct image link: `image` (poster / still / first look).
 
 ### `birthday` — Star of the Day
 
